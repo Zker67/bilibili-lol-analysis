@@ -1,0 +1,518 @@
+- 
+
+- <!DOCTYPE html>
+  <html lang="zh-CN">
+  <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>英雄联盟内容创作者深度分析报告</title>
+
+      <!-- Tailwind CSS CDN -->
+      <script src="https://cdn.tailwindcss.com"></script>
+      
+      <!-- Font Awesome CDN -->
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+      
+      <!-- Chart.js CDN -->
+      <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+      
+      <!-- Google Fonts: Inter -->
+      <link rel="preconnect" href="https://fonts.googleapis.com">
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+      
+      <style>
+          /*
+           * 主题与配色方案：灵感源于英雄联盟「海克斯科技」
+           * 背景: 深邃的午夜蓝，模拟海克斯核心的能量场。
+           * 卡片: 更深的蓝灰色，带有微妙的内部辉光效果。
+           * 高亮色 (蓝): 明亮、充满活力的科技蓝，用于关键数据、标题和图表。
+           * 高亮色 (金): 华丽、典雅的黄铜金，用于装饰、边框和次级强调。
+           * 文本: 柔和的米白色和灰色，确保在深色背景下的可读性。
+          */
+          :root {
+              --hex-bg: #010A13; /* 深邃的背景色 */
+              --hex-card-bg: #0A1428; /* 卡片背景色 */
+              --hex-border: #152A49; /* 卡片边框与分隔线 */
+              --hex-glow: rgba(10, 190, 220, 0.1); /* 卡片辉光效果 */
+              
+              --hex-highlight-blue: #0AC8B9; /* 海克斯科技蓝 */
+              --hex-highlight-gold: #C89B3C; /* 海克斯科技金 */
+      
+              --hex-text-primary: #F0E6D2; /* 主要文本颜色 - 柔和米白 */
+              --hex-text-secondary: #7B8B9A; /* 次要文本颜色 - 蓝灰色 */
+              --hex-text-title: #EFEFEF;    /* 标题颜色 */
+          }
+      
+          body {
+              background-color: var(--hex-bg);
+              color: var(--hex-text-primary);
+              font-family: 'Inter', 'Helvetica Neue', 'Arial', 'sans-serif';
+              background-image: 
+                  radial-gradient(circle at 25% 25%, rgba(10, 172, 200, 0.05), transparent 30%),
+                  radial-gradient(circle at 75% 75%, rgba(200, 155, 60, 0.05), transparent 30%);
+          }
+      
+          /* 统一卡片样式 */
+          .main-card {
+              background-color: var(--hex-card-bg);
+              border: 1px solid var(--hex-border);
+              border-radius: 1rem; /* 16px */
+              box-shadow: 0 0 25px 0 var(--hex-glow);
+              overflow: hidden; /* 确保内部元素不溢出圆角 */
+          }
+          
+          .mini-card {
+              background-color: rgba(10, 20, 40, 0.7);
+              border: 1px solid var(--hex-border);
+              border-radius: 0.75rem; /* 12px */
+              backdrop-filter: blur(5px);
+              -webkit-backdrop-filter: blur(5px);
+              transition: all 0.3s ease;
+          }
+      
+          .mini-card:hover {
+              transform: translateY(-5px);
+              box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+              border-color: var(--hex-highlight-gold);
+          }
+      
+          /* 高亮文本渐变 */
+          .text-gradient-blue {
+              background: linear-gradient(90deg, var(--hex-highlight-blue), #A7E3E1);
+              -webkit-background-clip: text;
+              -webkit-text-fill-color: transparent;
+          }
+      
+          /* 动画相关样式 */
+          .animate-on-scroll {
+              opacity: 0;
+              transform: translateY(30px);
+              transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+          }
+          
+          /* 为网格中的元素添加交错动画延迟 */
+          .stagger-delay > * { transition-delay: var(--delay); }
+      
+          .is-visible {
+              opacity: 1;
+              transform: translateY(0);
+          }
+          
+          /* 自定义海克斯风格标题装饰 */
+          .hex-title-decoration {
+              position: relative;
+              padding-left: 1.5rem;
+              color: var(--hex-text-title);
+          }
+      
+          .hex-title-decoration::before {
+              content: '';
+              position: absolute;
+              left: 0;
+              top: 50%;
+              transform: translateY(-50%);
+              width: 5px;
+              height: 100%;
+              background-color: var(--hex-highlight-blue);
+              border-radius: 2px;
+              box-shadow: 0 0 8px var(--hex-highlight-blue);
+          }
+      
+          /* Chart.js 暗黑模式默认配置 */
+          Chart.defaults.color = 'rgba(240, 230, 210, 0.7)'; /* --hex-text-primary with opacity */
+          Chart.defaults.borderColor = 'rgba(123, 139, 154, 0.2)'; /* --hex-text-secondary with opacity */
+          Chart.defaults.font.family = "'Inter', 'sans-serif'";
+      </style>
+  </head>
+  <body class="antialiased">
+      <div class="container mx-auto px-4 py-8 md:py-16 space-y-16 md:space-y-24">
+          
+          <!-- 1. 报告主标题 -->
+          <header class="text-center space-y-4 animate-on-scroll">
+              <i class="fas fa-gem text-5xl" style="color: var(--hex-highlight-gold);"></i>
+              <h1 class="text-4xl md:text-6xl font-black tracking-tight" style="color: var(--hex-text-title);">
+                  Bilibili <span class="text-gradient-blue">英雄联盟</span> 内容生态系统分析报告
+              </h1>
+              <p class="text-lg md:text-xl font-semibold" style="color: var(--hex-text-secondary);">
+                  League of Legends Content Ecosystem Analysis Report on Bilibili
+              </p>
+          </header>
+      
+          <!-- 2. 执行摘要 -->
+          <section class="main-card animate-on-scroll">
+              <div class="p-6 md:p-8">
+                  <h2 class="text-3xl font-bold hex-title-decoration mb-6">执行摘要 <span class="text-lg font-normal text-gray-400">/ Executive Summary</span></h2>
+                  <p class="text-base md:text-lg leading-relaxed mb-8" style="color: var(--hex-text-secondary);">
+                      本报告深度解构了 Bilibili 英雄联盟内容生态，揭示了一个由多元创作者原型主导的成熟市场。数据表明，顶级创作者的成功路径呈现出「体量为王」与「价值共鸣」两大核心方向。同时，竖屏视频和 AIGC 等新兴力量正在重塑内容创作与分发的战略格局。
+                  </p>
+      
+                  <!-- 核心发现 - 迷你卡片网格 -->
+                  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 stagger-delay">
+                      <!-- 卡片1: 四大核心原型 -->
+                      <div class="mini-card p-5 animate-on-scroll" style="--delay: 100ms;">
+                          <h3 class="text-3xl lg:text-4xl font-bold mb-2" style="color: var(--hex-highlight-blue);">4 大</h3>
+                          <p class="font-semibold text-lg mb-1" style="color: var(--hex-text-primary);">核心创作者原型</p>
+                          <p class="text-sm" style="color: var(--hex-text-secondary);">绝活哥、直播切片、自媒体、剪辑师主导生态。</p>
+                      </div>
+                      <!-- 卡片2: 两条成功路径 -->
+                      <div class="mini-card p-5 animate-on-scroll" style="--delay: 200ms;">
+                          <h3 class="text-3xl lg:text-4xl font-bold mb-2" style="color: var(--hex-highlight-blue);">2 条</h3>
+                          <p class="font-semibold text-lg mb-1" style="color: var(--hex-text-primary);">核心成功路径</p>
+                          <p class="text-sm" style="color: var(--hex-text-secondary);">「体量为王」实现广度覆盖，「价值共鸣」构建深度连接。</p>
+                      </div>
+                      <!-- 卡片3: 竖屏视频战略 -->
+                      <div class="mini-card p-5 animate-on-scroll" style="--delay: 300ms;">
+                          <i class="fas fa-mobile-screen-button text-4xl mb-2" style="color: var(--hex-highlight-blue);"></i>
+                          <p class="font-semibold text-lg mb-1" style="color: var(--hex-text-primary);">竖屏视频崛起</p>
+                          <p class="text-sm" style="color: var(--hex-text-secondary);">拥抱移动端算法推荐，成为破圈传播的关键。</p>
+                      </div>
+                      <!-- 卡片4: AIGC 新兴力量 -->
+                      <div class="mini-card p-5 animate-on-scroll" style="--delay: 400ms;">
+                          <i class="fas fa-robot text-4xl mb-2" style="color: var(--hex-highlight-blue);"></i>
+                          <p class="font-semibold text-lg mb-1" style="color: var(--hex-text-primary);">AIGC 新兴力量</p>
+                          <p class="text-sm" style="color: var(--hex-text-secondary);">降低高制作门槛，预示内容创作多样性爆发。</p>
+                      </div>
+                  </div>
+              </div>
+          </section>
+          
+          <!-- 3. 生态系统概览 -->
+          <section class="main-card animate-on-scroll">
+              <div class="p-6 md:p-8">
+                  <h2 class="text-3xl font-bold hex-title-decoration mb-6">生态系统概览 <span class="text-lg font-normal text-gray-400">/ Ecosystem Overview</span></h2>
+                  <p class="text-base md:text-lg leading-relaxed mb-8" style="color: var(--hex-text-secondary);">
+                      通过对创作者的内在定位、外在形式和荧幕身份进行剖析，我们发现 Bilibili 英雄联盟生态已形成一个多元且成熟的复合结构。娱乐与技术构成双核驱动力，而「绝活哥」和「自媒体」成为最主流的创作者身份。
+                  </p>
+                  <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                      <div class="animate-on-scroll">
+                          <h3 class="text-xl font-bold text-center mb-4" style="color: var(--hex-text-title);">创作者内在定位分布</h3>
+                          <canvas id="contentPositionChart"></canvas>
+                      </div>
+                      <div class="animate-on-scroll">
+                           <h3 class="text-xl font-bold text-center mb-4" style="color: var(--hex-text-title);">创作者荧幕身份分布</h3>
+                          <canvas id="creatorIdentityChart"></canvas>
+                      </div>
+                  </div>
+              </div>
+          </section>
+      
+          <!-- 4. 头部玩家阵营 -->
+          <section class="animate-on-scroll">
+              <div class="text-center mb-8">
+                  <h2 class="text-3xl md:text-4xl font-bold" style="color: var(--hex-text-title);">顶级创作者阵营</h2>
+                  <p class="text-lg" style="color: var(--hex-text-secondary);">Top Creator Lineup</p>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-6 stagger-delay">
+                  <!-- 播放量之王 -->
+                  <div class="main-card text-center p-8 animate-on-scroll" style="--delay: 100ms;">
+                      <i class="fas fa-satellite-dish text-5xl mb-4" style="color: var(--hex-highlight-gold);"></i>
+                      <p class="text-base font-semibold" style="color: var(--hex-text-secondary);">流量巨头 / Total Views Leader</p>
+                      <p class="text-2xl font-bold my-1" style="color: var(--hex-text-title);">火播君</p>
+                      <p class="text-6xl font-black text-gradient-blue">25.3亿</p>
+                      <p class="text-sm mt-2" style="color: var(--hex-text-secondary);">通过高频直播切片，实现巨大市场覆盖</p>
+                  </div>
+                  <!-- 关注量之王 -->
+                  <div class="main-card text-center p-8 animate-on-scroll" style="--delay: 200ms;">
+                      <i class="fas fa-users text-5xl mb-4" style="color: var(--hex-highlight-gold);"></i>
+                      <p class="text-base font-semibold" style="color: var(--hex-text-secondary);">社群领袖 / Followers Leader</p>
+                      <p class="text-2xl font-bold my-1" style="color: var(--hex-text-title);">靠脸吃饭的徐大王</p>
+                      <p class="text-6xl font-black text-gradient-blue">369万</p>
+                      <p class="text-sm mt-2" style="color: var(--hex-text-secondary);">以人格魅力与文化叙事构建粉丝社群</p>
+                  </div>
+                  <!-- 点赞数之王 -->
+                  <div class="main-card text-center p-8 animate-on-scroll" style="--delay: 300ms;">
+                      <i class="fas fa-heart text-5xl mb-4" style="color: var(--hex-highlight-gold);"></i>
+                      <p class="text-base font-semibold" style="color: var(--hex-text-secondary);">人气之王 / Likes Leader</p>
+                      <p class="text-2xl font-bold my-1" style="color: var(--hex-text-title);">觅渡 Dzg</p>
+                      <p class="text-6xl font-black text-gradient-blue">6174万</p>
+                      <p class="text-sm mt-2" style="color: var(--hex-text-secondary);">极致技艺引发观众强烈的情感共鸣与赞赏</p>
+                  </div>
+              </div>
+          </section>
+      
+          <!-- 5. 成功解码：创作者原型 -->
+          <section class="main-card animate-on-scroll">
+              <div class="p-6 md:p-8">
+                  <h2 class="text-3xl font-bold hex-title-decoration mb-6">成功解码：原型剖析 <span class="text-lg font-normal text-gray-400">/ Archetype Analysis</span></h2>
+                  <p class="text-base md:text-lg leading-relaxed mb-8" style="color: var(--hex-text-secondary);">
+                      不同创作者原型展现出迥异的优势与短板。「动画师」与「剪辑师」凭借精良制作获得最高的单视频价值与用户赞誉，而「直播切片」则在流量获取上独占鳌头，但用户粘性相对较低。
+                  </p>
+                  <div class="animate-on-scroll">
+                      <h3 class="text-xl font-bold text-center mb-4" style="color: var(--hex-text-title);">创作者原型综合表现对比 (平均值)</h3>
+                      <div class="w-full h-80 md:h-96 mx-auto"><canvas id="archetypeRadarChart"></canvas></div>
+                  </div>
+              </div>
+          </section>
+      
+          <!-- 6. 创作者战略矩阵 -->
+          <section class="main-card animate-on-scroll">
+              <div class="p-6 md:p-8">
+                  <h2 class="text-3xl font-bold hex-title-decoration mb-6">创作者战略矩阵 <span class="text-lg font-normal text-gray-400">/ Creator Strategy Matrix</span></h2>
+                  <p class="text-base md:text-lg leading-relaxed mb-8" style="color: var(--hex-text-secondary);">
+                      通过「播放/关注比」（外联效率）和「点赞率」（社群凝聚力）两个维度，可将创作者定位在四个象限，清晰地揭示其战略优势与发展方向。
+                  </p>
+                  <div class="relative grid grid-cols-2 grid-rows-2 gap-1 p-4 bg-black/20 rounded-lg">
+                      <!-- Axes Labels -->
+                      <div class="absolute top-1/2 left-0 -translate-y-1/2 -rotate-90 -translate-x-full pr-4 text-center">
+                          <p class="font-bold text-sm" style="color: var(--hex-text-primary);">社群凝聚力 (点赞率)</p>
+                          <i class="fas fa-arrow-up mt-2"></i>
+                      </div>
+                       <div class="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-full pt-4 text-center">
+                          <p class="font-bold text-sm" style="color: var(--hex-text-primary);">外联效率 (播放/关注比)</p>
+                          <i class="fas fa-arrow-right ml-2"></i>
+                      </div>
+      
+                      <!-- Quadrant 2: 社群冠军 -->
+                      <div class="border-r border-b border-dashed p-4" style="border-color: var(--hex-border);">
+                          <h4 class="font-bold text-lg" style="color: var(--hex-highlight-gold);">社群冠军</h4>
+                          <p class="text-sm mb-2" style="color: var(--hex-text-secondary);">高粘性，低破圈</p>
+                          <p class="font-semibold" style="color: var(--hex-text-primary);"><i class="fas fa-user-shield mr-2"></i>子花酱Hanako</p>
+                      </div>
+                      <!-- Quadrant 1: 明星创作者 -->
+                      <div class="border-b border-dashed p-4" style="border-color: var(--hex-border);">
+                          <h4 class="font-bold text-lg" style="color: var(--hex-highlight-gold);">明星创作者</h4>
+                          <p class="text-sm mb-2" style="color: var(--hex-text-secondary);">高粘性，高破圈</p>
+                          <p class="font-semibold" style="color: var(--hex-text-primary);"><i class="fas fa-star mr-2"></i>觅渡 Dzg</p>
+                      </div>
+                      <!-- Quadrant 3: 发展/转型中 -->
+                      <div class="border-r border-dashed p-4" style="border-color: var(--hex-border);">
+                          <h4 class="font-bold text-lg" style="color: var(--hex-highlight-gold);">发展/转型中</h4>
+                          <p class="text-sm mb-2" style="color: var(--hex-text-secondary);">低粘性，低破圈</p>
+                           <p class="font-semibold" style="color: var(--hex-text-primary);"><i class="fas fa-cogs mr-2"></i>大量腰部创作者</p>
+                      </div>
+                      <!-- Quadrant 4: 流量广播者 -->
+                      <div class="p-4">
+                          <h4 class="font-bold text-lg" style="color: var(--hex-highlight-gold);">流量广播者</h4>
+                          <p class="text-sm mb-2" style="color: var(--hex-text-secondary);">低粘性，高破圈</p>
+                          <p class="font-semibold" style="color: var(--hex-text-primary);"><i class="fas fa-broadcast-tower mr-2"></i>火播君</p>
+                      </div>
+                  </div>
+              </div>
+          </section>
+      
+          <!-- 7. 新浪潮：AIGC vs 动画师 -->
+          <section class="animate-on-scroll">
+              <div class="text-center mb-8">
+                  <h2 class="text-3xl md:text-4xl font-bold" style="color: var(--hex-text-title);">新浪潮：动画与 AIGC 的崛起</h2>
+                  <p class="text-lg" style="color: var(--hex-text-secondary);">The New Wave: Animation & AIGC</p>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6 stagger-delay">
+                  <div class="main-card p-8 animate-on-scroll flex flex-col items-center text-center" style="--delay: 100ms;">
+                      <i class="fas fa-pencil-ruler text-5xl mb-4" style="color: var(--hex-highlight-gold);"></i>
+                      <h3 class="text-2xl font-bold mb-2" style="color: var(--hex-text-title);">内容工匠：动画师</h3>
+                      <p class="text-base mb-4" style="color: var(--hex-text-secondary);">高投入、高回报的典范</p>
+                      <p class="text-6xl font-black text-gradient-blue">84.8万</p>
+                      <p class="font-semibold" style="color: var(--hex-text-primary);">平均单视频播放量</p>
+                      <p class="text-sm mt-1" style="color: var(--hex-text-secondary);">Average Views / Video</p>
+                  </div>
+                  <div class="main-card p-8 animate-on-scroll flex flex-col items-center text-center" style="--delay: 200ms;">
+                      <i class="fas fa-microchip text-5xl mb-4" style="color: var(--hex-highlight-gold);"></i>
+                      <h3 class="text-2xl font-bold mb-2" style="color: var(--hex-text-title);">机器的兴起：AIGC</h3>
+                      <p class="text-base mb-4" style="color: var(--hex-text-secondary);">降低创作门槛，创意是核心</p>
+                      <p class="text-6xl font-black text-gradient-blue">7.12%</p>
+                      <p class="font-semibold" style="color: var(--hex-text-primary);">头部创作者点赞率</p>
+                      <p class="text-sm mt-1" style="color: var(--hex-text-secondary);">Top Creator Like Rate (e.g., 按E见摩)</p>
+                  </div>
+              </div>
+          </section>
+      
+          <!-- 8. 战略建议 -->
+          <section class="main-card animate-on-scroll">
+              <div class="p-6 md:p-8">
+                   <h2 class="text-3xl font-bold hex-title-decoration mb-6">战略综合与前瞻性建议 <span class="text-lg font-normal text-gray-400">/ Strategy & Outlook</span></h2>
+                   <div class="space-y-6">
+                      <div>
+                          <h3 class="text-xl font-bold mb-2" style="color: var(--hex-highlight-gold);"><i class="fas fa-sitemap mr-2"></i>对于 MCN / 人才机构</h3>
+                          <p style="color: var(--hex-text-secondary);">使用战略矩阵进行诊断与规划，并积极投资、布局 AIGC 技术以赋能创作者。</p>
+                      </div>
+                      <div>
+                          <h3 class="text-xl font-bold mb-2" style="color: var(--hex-highlight-gold);"><i class="fas fa-bullhorn mr-2"></i>对于品牌 / 市场营销</h3>
+                          <p style="color: var(--hex-text-secondary);">根据营销目标精准匹配创作者：曝光量选「流量广播者」，品牌美誉度选「明星创作者」或「社群冠军」。</p>
+                      </div>
+                       <div>
+                          <h3 class="text-xl font-bold mb-2" style="color: var(--hex-highlight-gold);"><i class="fas fa-user-astronaut mr-2"></i>对于内容创作者</h3>
+                          <p style="color: var(--hex-text-secondary);">明确核心路径，专注打造核心竞争力。深刻理解并战略性地运用竖屏与横屏格式。拥抱 AIGC 等新工具，并探索「游戏文化」等蓝海市场。</p>
+                      </div>
+                   </div>
+              </div>
+          </section>
+      
+          <!-- Footer -->
+          <footer class="text-center text-sm animate-on-scroll" style="color: var(--hex-text-secondary);">
+              <p>该报告由 AI 基于源文档动态生成。数据与分析仅供参考。</p>
+              <p>Dynamic Report Generated by AI. Data and analysis are for reference only.</p>
+          </footer>
+      
+      </div>
+      
+      <script>
+          document.addEventListener('DOMContentLoaded', () => {
+              // 1. 实现滚动动画
+              const animatedElements = document.querySelectorAll('.animate-on-scroll');
+              
+              const observer = new IntersectionObserver((entries) => {
+                  entries.forEach(entry => {
+                      if (entry.isIntersecting) {
+                          entry.target.classList.add('is-visible');
+                          // Optional: unobserve after animation to save resources
+                          // observer.unobserve(entry.target);
+                      }
+                  });
+              }, {
+                  threshold: 0.1 // Trigger when 10% of the element is visible
+              });
+      
+              animatedElements.forEach(el => {
+                  observer.observe(el);
+              });
+              
+              // 为网格元素设置交错延迟
+              const staggerGrids = document.querySelectorAll('.stagger-delay');
+              staggerGrids.forEach(grid => {
+                  const items = grid.querySelectorAll('.animate-on-scroll');
+                  items.forEach((item, index) => {
+                      item.style.transitionDelay = `${index * 100}ms`;
+                  });
+              });
+
+
+              // 2. 初始化 Chart.js 图表
+              const hexBlue = 'rgba(10, 200, 185, 1)';
+              const hexBlueTransparent = 'rgba(10, 200, 185, 0.4)';
+              const hexGold = 'rgba(200, 155, 60, 1)';
+              const hexGoldTransparent = 'rgba(200, 155, 60, 0.4)';
+      
+              // 图表1: 创作者内在定位分布
+              const contentPositionChartCtx = document.getElementById('contentPositionChart');
+              if(contentPositionChartCtx) {
+                  new Chart(contentPositionChartCtx, {
+                      type: 'bar',
+                      data: {
+                          labels: ['🎉 娱乐', '💡 技术', '💬 社群', '🏆 电竞', '📰 信息', '🎨 文化'],
+                          datasets: [{
+                              label: '创作者数量',
+                              data: [125, 101, 40, 30, 28, 14],
+                              backgroundColor: hexBlueTransparent,
+                              borderColor: hexBlue,
+                              borderWidth: 2
+                          }]
+                      },
+                      options: {
+                          indexAxis: 'y',
+                          responsive: true,
+                          maintainAspectRatio: false,
+                          plugins: {
+                              legend: { display: false },
+                              tooltip: {
+                                  backgroundColor: 'rgba(1, 10, 19, 0.8)',
+                                  titleColor: hexGold,
+                                  bodyColor: '#F0E6D2',
+                              }
+                          },
+                          scales: {
+                              x: { grid: { color: 'rgba(123, 139, 154, 0.2)' } },
+                              y: { grid: { display: false } }
+                          }
+                      }
+                  });
+              }
+              
+              // 图表2: 创作者荧幕身份分布
+              const creatorIdentityChartCtx = document.getElementById('creatorIdentityChart');
+               if(creatorIdentityChartCtx) {
+                  new Chart(creatorIdentityChartCtx, {
+                      type: 'bar',
+                      data: {
+                          labels: ['👍 绝活哥', '🎤 自媒体', '✂️ 剪辑师', '👾 联盟玩家', '🔥 高玩', '⏺ 直播切片', '🖌️ 动画师', '🤖 AIGC'],
+                          datasets: [{
+                              label: '创作者数量',
+                              data: [62, 38, 32, 23, 16, 13, 8, 6],
+                               backgroundColor: hexGoldTransparent,
+                              borderColor: hexGold,
+                              borderWidth: 2
+                          }]
+                      },
+                      options: {
+                          indexAxis: 'y',
+                          responsive: true,
+                          maintainAspectRatio: false,
+                          plugins: {
+                              legend: { display: false },
+                               tooltip: {
+                                  backgroundColor: 'rgba(1, 10, 19, 0.8)',
+                                  titleColor: hexBlue,
+                                  bodyColor: '#F0E6D2',
+                              }
+                          },
+                          scales: {
+                              x: { grid: { color: 'rgba(123, 139, 154, 0.2)' } },
+                              y: { grid: { display: false } }
+                          }
+                      }
+                  });
+              }
+      
+              // 图表3: 原型对比雷达图
+              const archetypeRadarChartCtx = document.getElementById('archetypeRadarChart');
+              if (archetypeRadarChartCtx) {
+                  new Chart(archetypeRadarChartCtx, {
+                      type: 'radar',
+                      data: {
+                          labels: ['单视频播放 (万)', '点赞率 (%)', '流量效率', '制作价值'],
+                          datasets: [
+                              {
+                                  label: '👍 绝活哥',
+                                  data: [24.7, 4.97, 6, 8],
+                                  backgroundColor: 'rgba(10, 200, 185, 0.2)',
+                                  borderColor: 'rgba(10, 200, 185, 1)',
+                                  pointBackgroundColor: 'rgba(10, 200, 185, 1)',
+                              },
+                              {
+                                  label: '⏺ 直播切片',
+                                  data: [12.8, 2.09, 9, 2],
+                                  backgroundColor: 'rgba(200, 155, 60, 0.2)',
+                                  borderColor: 'rgba(200, 155, 60, 1)',
+                                  pointBackgroundColor: 'rgba(200, 155, 60, 1)',
+                              },
+                               {
+                                  label: '🖌️ 动画师',
+                                  data: [84.8, 5.03, 7, 10],
+                                  backgroundColor: 'rgba(240, 230, 210, 0.2)',
+                                  borderColor: 'rgba(240, 230, 210, 1)',
+                                  pointBackgroundColor: 'rgba(240, 230, 210, 1)',
+                              }
+                          ]
+                      },
+                      options: {
+                          responsive: true,
+                          maintainAspectRatio: false,
+                          plugins: {
+                              legend: {
+                                  position: 'top',
+                                  labels: { padding: 20 }
+                              },
+                              tooltip: {
+                                  backgroundColor: 'rgba(1, 10, 19, 0.8)',
+                                  titleColor: '#F0E6D2',
+                                  bodyColor: '#F0E6D2',
+                              }
+                          },
+                          scales: {
+                              r: {
+                                  angleLines: { color: 'rgba(123, 139, 154, 0.2)' },
+                                  grid: { color: 'rgba(123, 139, 154, 0.2)' },
+                                  pointLabels: { font: { size: 14 } },
+                                  ticks: {
+                                      backdropColor: 'rgba(1, 10, 19, 0.9)'
+                                  }
+                              }
+                          }
+                      }
+                  });
+              }
+          });
+      </script>
+
+  </body>
+  </html>
